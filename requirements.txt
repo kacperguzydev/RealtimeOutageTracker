@@ -1,0 +1,8 @@
+streamlit
+pandas
+psycopg2-binary
+kafka-python
+praw
+pyspark
+prometheus_client
+loguru

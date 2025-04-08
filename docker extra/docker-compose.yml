@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: outrage
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  main_app:
+    build: .
+    command: ["./wait-for-it.sh", "postgres:5432", "-t", "90", "--", "python", "main.py"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=outrage
+      - DB_USER=postgres
+      - DB_PASSWORD=1234
+      - KAFKA_BROKER=host.docker.internal:9092
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    restart: always
+
+  spark_streaming:
+    build: .
+    command: ["./wait-for-it.sh", "postgres:5432", "-t", "90", "--", "python", "spark_streaming.py"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=outrage
+      - DB_USER=postgres
+      - DB_PASSWORD=1234
+      - KAFKA_BROKER=host.docker.internal:9092
+    depends_on:
+      - postgres
+    restart: always
+
+  streamlit_app:
+    build: .
+    command: ["streamlit", "run", "streamlit_app.py", "--server.enableCORS", "false"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=outrage
+      - DB_USER=postgres
+      - DB_PASSWORD=1234
+    ports:
+      - "8501:8501"
+    depends_on:
+      - postgres
+    restart: always
+
+volumes:
+  pgdata:
